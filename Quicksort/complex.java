@@ -36,7 +36,7 @@ public class Complex {
         //List<Integer> myList = Arrays.asList(5, 3, 8, 2, 9, 10, 11, 4, 4, 17, 2, 4, 78, 9, 3, 1, 5, 7, 9, 46 ,1, 6, 9, 4, 2, 3);
         
         // get the main 9 numbers and sort them
-        Complex obj = new Complex(10000, 101);
+        Complex obj = new Complex(1000, 101);
         
         int size = obj.list.size();
         obj.list = sort(obj.list);
@@ -51,16 +51,16 @@ public class Complex {
                 System.out.format("This is how sorted the array is: %f\n", sort);
 
                 // measure time taken
-                long start = System.currentTimeMillis();
+                long start = System.nanoTime();
                 to_pass = sort(to_pass);
-                long end = System.currentTimeMillis();
+                long end = System.nanoTime();
 
 
-                NumberFormat formatter = new DecimalFormat("#0.00000");
-                System.out.print("Execution time is " + formatter.format((end - start) / 1000d) + " seconds");
+                NumberFormat formatter = new DecimalFormat("#0.00");
+                System.out.print("Execution time is " + formatter.format((end - start) / 1000d) + " milliseconds");
                 System.out.println();
 
-                writeToCSV(writer, sort, end-start);
+                writeToCSV(writer, sort, formatter.format((end - start)/1000d));
                 
                 // do interleave for arrays
                 List<List<Integer>> parts = new ArrayList<List<Integer>>();
@@ -109,7 +109,7 @@ public class Complex {
         
     }
 
-    public static void writeToCSV(FileWriter wr, float sort, float time){
+    public static void writeToCSV(FileWriter wr, float sort, String time){
         StringBuilder sb = new StringBuilder();
         sb.append(sort);
         sb.append(',');
