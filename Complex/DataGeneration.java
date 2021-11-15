@@ -1,66 +1,37 @@
-package Complex;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.io.*;
+import java.util.*;
+import java.util.stream.*;
 
-// [2, 1, 7, 4, 5, 6] - 66% 1/3 sorted // 
-// [2, 1, 3, 4, 5, 6, 7, 8, 9, 10] // 4/5 pairs sorted // 4/4 - 100% // total - 4/5*5/5 = 80%
-// [3, 4, 2, 1, 5, 6, 7, 8, 9, 10] // 4/5 pairs sorted // 3/4 - 75% // total - 3/5 - 60%
-// [2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11] //
-
-
-// split it into pairs - smaller arrays and check if they are sorted
-// 
-
-public class Complex {
-    public List<Integer> list = new ArrayList<Integer>();
-    public int upperb;
-    //Integer[] arr = new Integer[] {3,4,2,1,5,6,7,8,9};
-
+public class DataGeneration {
     public static void main(String[] args) throws IOException {
-        System.out.println("generating data from arrays of size 100");
         generateData(100, 100);
     }
 
-    public Complex(int n, int upperb) {
-        this.upperb = upperb;
-        int[]  randomIntsArray = new Random().ints(n, 0, upperb).toArray();
-        this.list = Arrays.stream(randomIntsArray).boxed().collect(Collectors.toList());
-        // this.list = Arrays.stream(3, 4, 2, 1, 5, 6, 7, 8, 9).boxed().collect(Collectors.toList());;
-        //this.list = Arrays.asList(arr);
-    }
-    
     public static void generateData(int n, int timesShuffled) throws IOException {
         // create random List Integer of n size
         int[] randomNArray = new Random().ints(n, 0, 10 * n).toArray();
         List<Integer> randomList = Arrays.stream(randomNArray).boxed().collect(Collectors.toList());
+        // sort random list
+        Collections.sort(randomList);
         FileWriter writer = new FileWriter("../data/" + n + "LengthData.csv");
 
         for (int i = 0; i < timesShuffled; i++) {
             // deep copy random list
             List<Integer> randomListCopy = new ArrayList<Integer>(randomList);
             // calculate sortedness of deep copy
-            float sortedness = measureSort(randomListCopy, 10 * n);
+            float sortedness = measureSortedness(randomListCopy, 10 * n);
             // calculate time taken to sort the deep copy
             long startTime = System.nanoTime();
             sort(randomListCopy);
             long endTime = System.nanoTime();
             long duration = (endTime - startTime);
             // write to file
-            writer.write(n + "," + duration + "," + sortedness + "\n");
+            writer.write(sortedness + "," + duration + "\n");
 
             // shuffle randomlist
             randomList = shuffle(randomListCopy, i);
         }
+        writer.close();
     }
 
     public static List<Integer> interleaveShuffle(List<Integer> list) {
@@ -85,10 +56,24 @@ public class Complex {
         listCopy = interleaveShuffle(listCopy);
         int size = list.size();
         int partSize = size / 4;
-        List<Integer> part1 = listCopy.subList(0, partSize);
-        List<Integer> part2 = listCopy.subList(partSize, partSize * 2);
-        List<Integer> part3 = listCopy.subList(partSize * 2, partSize * 3);
-        List<Integer> part4 = listCopy.subList(partSize * 3, size);
+        // create 4 new lists
+        List<Integer> part1 = new LinkedList<Integer>();
+        List<Integer> part2 = new LinkedList<Integer>();
+        List<Integer> part3 = new LinkedList<Integer>();
+        List<Integer> part4 = new LinkedList<Integer>();
+
+        // for loop transfer from listCopy to 4 new lists
+        for (int j = 0; j < size; j++) {
+            if (j < partSize) {
+                part1.add(listCopy.get(j));
+            } else if (j < 2 * partSize) {
+                part2.add(listCopy.get(j));
+            } else if (j < 3 * partSize) {
+                part3.add(listCopy.get(j));
+            } else {
+                part4.add(listCopy.get(j));
+            }
+        }
 
         switch (i % 4) {
             case 0:
@@ -126,20 +111,50 @@ public class Complex {
         return part1;
     }
 
-    public static void writeToCSV(FileWriter wr, float sort, String time){
-        StringBuilder sb = new StringBuilder();
-        sb.append(sort);
-        sb.append(',');
-        sb.append(time);
-        sb.append('\n');
-        try {
-            wr.write(sb.toString());
-        } catch (IOException e) {
-            System.out.println(e);
+    // ! sorting algos
+
+    public static List<Integer> sort(List<Integer> myList) {
+        int pass_length = myList.size()-1;
+        //System.out.format("Length minus pivot: %d\n", pass_length);
+        if (pass_length == -1){
+            return myList;
         }
+        
+        int pivot = myList.get(pass_length);
+        //System.out.format("Pivot: %d\n", pivot);
+
+        List<Integer> smaller_array = new ArrayList<Integer>();
+        List<Integer> larger_array = new ArrayList<Integer>();
+        List<Integer> to_return = new ArrayList<Integer>();
+
+        for (int i=0; i<pass_length; i++){
+            int num = myList.get(i);
+            if (num<pivot){
+                smaller_array.add(num);
+            } else {
+                larger_array.add(num);
+            }
+        }
+
+        // System.out.format("Length small: %d\n", smaller_array.size());
+        // System.out.println(smaller_array);
+        // System.out.format("Length large: %d\n", larger_array.size());
+        // System.out.println(larger_array);
+
+        smaller_array = sort(smaller_array);
+        larger_array = sort(larger_array);
+
+        to_return.addAll(smaller_array);
+        to_return.add(pivot);
+        to_return.addAll(larger_array);
+
+        //return sort(smaller_array);
+        //System.out.println(pivot);
+        
+        return to_return;
     }
 
-    public static float measureSort(List<Integer> myList, int upperb) {
+    public static float measureSortedness(List<Integer> myList, int upperb) {
         float sortedness = 10;
         boolean isOdd = false;
         int sortedWithinPair= 0;
@@ -214,47 +229,4 @@ public class Complex {
 
         return sortedness;
     }
-
-
-    public static List<Integer> sort(List<Integer> myList) {
-        int pass_length = myList.size()-1;
-        //System.out.format("Length minus pivot: %d\n", pass_length);
-        if (pass_length == -1){
-            return myList;
-        }
-        
-        int pivot = myList.get(pass_length);
-        //System.out.format("Pivot: %d\n", pivot);
-
-        List<Integer> smaller_array = new ArrayList<Integer>();
-        List<Integer> larger_array = new ArrayList<Integer>();
-        List<Integer> to_return = new ArrayList<Integer>();
-
-        for (int i=0; i<pass_length; i++){
-            int num = myList.get(i);
-            if (num<pivot){
-                smaller_array.add(num);
-            } else {
-                larger_array.add(num);
-            }
-        }
-
-        // System.out.format("Length small: %d\n", smaller_array.size());
-        // System.out.println(smaller_array);
-        // System.out.format("Length large: %d\n", larger_array.size());
-        // System.out.println(larger_array);
-
-        smaller_array = sort(smaller_array);
-        larger_array = sort(larger_array);
-
-        to_return.addAll(smaller_array);
-        to_return.add(pivot);
-        to_return.addAll(larger_array);
-
-        //return sort(smaller_array);
-        //System.out.println(pivot);
-        
-        return to_return;
-    }
-
 }
